@@ -1,0 +1,78 @@
+{% extends "base.html" %}
+{% set active = 'cotizaciones' %}
+{% block title %}{{ cot.folio }}{% endblock %}
+{% block content %}
+<div class="topbar">
+  <div class="topbar-left">
+    <h1>{{ cot.folio }}</h1>
+    <p>{{ cot.empresa }} — {{ cot.fecha[:10] if cot.fecha else '' }}</p>
+  </div>
+  <div class="topbar-actions">
+    <button class="btn btn-sm" onclick="window.print()">Imprimir</button>
+    <a href="/cotizaciones" class="btn">← Volver</a>
+  </div>
+</div>
+<div class="content">
+  <div style="max-width:800px">
+    <div class="card" style="margin-bottom:16px">
+      <div class="card-body">
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px">
+          <div>
+            <div style="font-size:11px;color:var(--text3);margin-bottom:4px">CLIENTE</div>
+            <div style="font-weight:600">{{ cot.empresa }}</div>
+            <div style="font-size:13px;color:var(--text2)">{{ cot.contacto or '' }}</div>
+            <div style="font-size:12px;color:var(--text3)">{{ cot.rfc or '' }}</div>
+          </div>
+          <div style="text-align:right">
+            <div style="font-size:11px;color:var(--text3);margin-bottom:4px">ESTADO</div>
+            {% set badge = {'Borrador':'badge-draft','Enviada':'badge-sent','Aprobada':'badge-approved','Pendiente':'badge-pending','Cancelada':'badge-cancelled'} %}
+            <span class="badge {{ badge.get(cot.estado,'badge-draft') }}" style="font-size:13px;padding:5px 12px">{{ cot.estado }}</span>
+            <div style="font-size:12px;color:var(--text3);margin-top:8px">Vigencia: {{ cot.vigencia or '—' }}</div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="table-wrap" style="margin-bottom:16px">
+      <table>
+        <thead>
+          <tr>
+            <th>Ref.</th>
+            <th>Producto</th>
+            <th>Medida</th>
+            <th style="text-align:right">Precio unit.</th>
+            <th style="text-align:right">Cantidad</th>
+            <th style="text-align:right">Subtotal</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for i in items %}
+          <tr>
+            <td class="mono">{{ i.ref }}</td>
+            <td>{{ i.nombre }}</td>
+            <td class="mono">{{ i.medida or '—' }}</td>
+            <td class="price" style="text-align:right">${{ "%.2f"|format(i.precio_unitario) }}</td>
+            <td style="text-align:right">{{ i.cantidad }}</td>
+            <td class="price" style="text-align:right">${{ "%.2f"|format(i.subtotal) }}</td>
+          </tr>
+          {% endfor %}
+        </tbody>
+        <tfoot>
+          <tr>
+            <td colspan="5" style="text-align:right;font-weight:600;padding:12px 14px">Total:</td>
+            <td style="text-align:right;font-weight:600;font-family:'DM Mono',monospace;padding:12px 14px">${{ "%.2f"|format(cot.total) }}</td>
+          </tr>
+        </tfoot>
+      </table>
+    </div>
+    {% if cot.notas %}
+    <div class="card">
+      <div class="card-body">
+        <div style="font-size:11px;font-weight:600;color:var(--text3);margin-bottom:6px">NOTAS</div>
+        <div style="font-size:13px">{{ cot.notas }}</div>
+      </div>
+    </div>
+    {% endif %}
+  </div>
+</div>
+{% endblock %}

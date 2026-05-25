@@ -1,0 +1,74 @@
+{% extends "base.html" %}
+{% set active = 'clientes' %}
+{% block title %}Clientes{% endblock %}
+{% block content %}
+<div class="topbar">
+  <div class="topbar-left">
+    <h1>Clientes</h1>
+    <p>Directorio de clientes</p>
+  </div>
+  <div class="topbar-actions">
+    <a href="/clientes/nuevo" class="btn btn-primary">
+      <svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+      Nuevo cliente
+    </a>
+  </div>
+</div>
+<div class="content">
+  <div class="stats-grid">
+    <div class="stat">
+      <div class="stat-label">Total clientes</div>
+      <div class="stat-value">{{ stats.total }}</div>
+    </div>
+    <div class="stat">
+      <div class="stat-label">Activos</div>
+      <div class="stat-value" style="color:var(--accent)">{{ stats.activos }}</div>
+    </div>
+  </div>
+
+  <form class="search-bar" method="get">
+    <input type="text" name="q" value="{{ q }}" placeholder="Buscar empresa o contacto…">
+    <button class="btn btn-primary" type="submit">Buscar</button>
+    {% if q %}<a href="/clientes" class="btn">Limpiar</a>{% endif %}
+  </form>
+
+  <div class="table-wrap">
+    <table>
+      <thead>
+        <tr>
+          <th>Empresa</th>
+          <th>Contacto</th>
+          <th>Teléfono</th>
+          <th>Email</th>
+          <th>RFC</th>
+          <th>Crédito</th>
+          <th>Estado</th>
+          <th></th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for c in clientes %}
+        <tr>
+          <td style="font-weight:500">{{ c.empresa }}</td>
+          <td>{{ c.contacto or '—' }}</td>
+          <td class="mono">{{ c.telefono or '—' }}</td>
+          <td>{{ c.email or '—' }}</td>
+          <td class="mono">{{ c.rfc or '—' }}</td>
+          <td class="price">${{ "{:,.2f}".format(c.credito or 0) }}</td>
+          <td>
+            {% if c.activo %}
+              <span class="badge badge-ok">Activo</span>
+            {% else %}
+              <span class="badge badge-cancelled">Inactivo</span>
+            {% endif %}
+          </td>
+          <td>
+            <a href="/clientes/editar/{{ c.id }}" class="btn btn-sm">Editar</a>
+          </td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</div>
+{% endblock %}

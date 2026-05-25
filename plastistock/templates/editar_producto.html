@@ -1,0 +1,78 @@
+{% extends "base.html" %}
+{% set active = 'inventario' %}
+{% block title %}{% if producto %}Editar producto{% else %}Nuevo producto{% endif %}{% endblock %}
+{% block content %}
+<div class="topbar">
+  <div class="topbar-left">
+    <h1>{% if producto %}Editar producto{% else %}Nuevo producto{% endif %}</h1>
+    <p>{% if producto %}{{ producto.ref }} — {{ producto.nombre }}{% else %}Agrega un nuevo SKU al catálogo{% endif %}</p>
+  </div>
+  <div class="topbar-actions">
+    <a href="/inventario" class="btn">← Volver</a>
+  </div>
+</div>
+<div class="content">
+  <div class="card" style="max-width:700px">
+    <div class="card-body">
+      <form method="post">
+        <div class="form-section">
+          <div class="form-section-title">Información del producto</div>
+          <div class="form-grid form-grid-2">
+            {% if not producto %}
+            <div class="form-group">
+              <label>Referencia (SKU) *</label>
+              <input name="ref" placeholder="Ej. S-11200" required style="font-family:'DM Mono',monospace;text-transform:uppercase">
+            </div>
+            {% endif %}
+            <div class="form-group" {% if not producto %}style="grid-column:1/-1"{% endif %}>
+              <label>Nombre del producto *</label>
+              <input name="nombre" value="{{ producto.nombre if producto else '' }}" required placeholder="Ej. BOLSA NEGRA 60X90 CM">
+            </div>
+            <div class="form-group">
+              <label>Medida</label>
+              <input name="medida" value="{{ producto.medida or '' }}" placeholder="Ej. 60x90 cm">
+            </div>
+            <div class="form-group">
+              <label>Contenido por paquete</label>
+              <input name="contenido_paquete" value="{{ producto.contenido_paquete or '' }}" placeholder="Ej. 10 bolsas">
+            </div>
+            <div class="form-group">
+              <label>Contenido por bulto</label>
+              <input type="number" name="contenido_bulto" value="{{ producto.contenido_bulto if producto else 1 }}" min="1">
+            </div>
+            <div class="form-group">
+              <label>Stock inicial</label>
+              <input type="number" name="stock" value="{{ producto.stock if producto else 0 }}" min="0">
+            </div>
+          </div>
+        </div>
+
+        <div class="form-section">
+          <div class="form-section-title">Precios</div>
+          <div class="form-grid form-grid-2">
+            <div class="form-group">
+              <label>Costo</label>
+              <input type="number" step="0.01" name="costo" value="{{ producto.costo if producto else '' }}" placeholder="0.00">
+            </div>
+            <div class="form-group">
+              <label>Precio unitario + IVA</label>
+              <input type="number" step="0.01" name="precio_unitario_iva" value="{{ producto.precio_unitario_iva if producto else '' }}" placeholder="0.00">
+            </div>
+            <div class="form-group">
+              <label>Precio con margen de ganancia</label>
+              <input type="number" step="0.01" name="precio_margen" value="{{ producto.precio_margen if producto else '' }}" placeholder="0.00">
+            </div>
+          </div>
+        </div>
+
+        <div style="display:flex;gap:8px">
+          <button class="btn btn-primary" type="submit">
+            {% if producto %}Guardar cambios{% else %}Crear producto{% endif %}
+          </button>
+          <a href="/inventario" class="btn">Cancelar</a>
+        </div>
+      </form>
+    </div>
+  </div>
+</div>
+{% endblock %}

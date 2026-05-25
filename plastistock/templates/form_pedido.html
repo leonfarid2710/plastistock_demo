@@ -1,0 +1,168 @@
+{% extends "base.html" %}
+{% set active = 'pedidos' %}
+{% block title %}Nuevo pedido{% endblock %}
+{% block content %}
+<div class="topbar">
+  <div class="topbar-left">
+    <h1>Nuevo pedido</h1>
+  </div>
+  <div class="topbar-actions">
+    <a href="/pedidos" class="btn">← Volver</a>
+  </div>
+</div>
+<div class="content">
+  <div id="alert" class="alert alert-success" style="display:none"></div>
+  <div class="card" style="max-width:900px">
+    <div class="card-body">
+      <div class="form-section">
+        <div class="form-section-title">Datos del pedido</div>
+        <div class="form-grid form-grid-2">
+          <div class="form-group">
+            <label>Cliente *</label>
+            <select id="cliente_id" required>
+              <option value="">— Seleccionar —</option>
+              {% for c in clientes %}
+              <option value="{{ c.id }}">{{ c.empresa }}</option>
+              {% endfor %}
+            </select>
+          </div>
+          <div class="form-group">
+            <label>Fecha de entrega *</label>
+            <input type="date" id="fecha_entrega" required>
+          </div>
+          <div class="form-group">
+            <label>Cotización relacionada (opcional)</label>
+            <select id="cotizacion_id">
+              <option value="">— Ninguna —</option>
+              {% for c in cotizaciones %}
+              <option value="{{ c.id }}">{{ c.folio }} — {{ c.empresa }}</option>
+              {% endfor %}
+            </select>
+          </div>
+          <div class="form-group">
+            <label>Estado inicial</label>
+            <select id="estado_ini">
+              <option>Pendiente</option>
+              <option>En camino</option>
+            </select>
+          </div>
+          <div class="form-group" style="grid-column:1/-1">
+            <label>Notas</label>
+            <input id="notas" placeholder="Instrucciones de entrega u observaciones…">
+          </div>
+        </div>
+      </div>
+
+      <div class="form-section">
+        <div class="form-section-title" style="display:flex;align-items:center;justify-content:space-between">
+          Productos
+          <button class="btn btn-sm btn-primary" type="button" onclick="addRow()">+ Agregar producto</button>
+        </div>
+        <div class="table-wrap">
+          <table class="items-table">
+            <thead>
+              <tr>
+                <th style="width:36%">Producto</th>
+                <th style="width:14%">Precio unit.</th>
+                <th style="width:10%">Cantidad</th>
+                <th style="width:10%">Stock</th>
+                <th style="width:13%">Subtotal</th>
+                <th style="width:6%"></th>
+              </tr>
+            </thead>
+            <tbody id="items-body"></tbody>
+            <tfoot>
+              <tr>
+                <td colspan="4" style="text-align:right;color:var(--text2);font-size:13px">Total:</td>
+                <td id="total-cell" style="font-family:'DM Mono',monospace">$0.00</td>
+                <td></td>
+              </tr>
+            </tfoot>
+          </table>
+        </div>
+      </div>
+
+      <button class="btn btn-primary" onclick="guardar()">Crear pedido</button>
+    </div>
+  </div>
+</div>
+{% endblock %}
+{% block scripts %}
+<script>
+const productos = {{ productos | tojson }};
+let rowCount = 0;
+
+function addRow(){
+  const tbody = document.getElementById('items-body');
+  const tr = document.createElement('tr');
+  tr.id = 'row-'+rowCount;
+  const opts = productos.map(p=>`<option value="${p.id}" data-precio="${p.precio_margen}" data-stock="${p.stock}">${p.ref} — ${p.nombre}</option>`).join('');
+  tr.innerHTML = `
+    <td><select onchange="setPrice(this,${rowCount})" class="prod-sel"><option value="">— Producto —</option>${opts}</select></td>
+    <td><input type="number" step="0.01" id="precio-${rowCount}" value="0" oninput="calcRow(${rowCount})"></td>
+    <td><input type="number" id="cant-${rowCount}" value="1" min="1" oninput="calcRow(${rowCount})"></td>
+    <td id="stk-${rowCount}" style="font-size:12px;color:var(--text3)">—</td>
+    <td id="sub-${rowCount}" style="font-family:'DM Mono',monospace">$0.00</td>
+    <td><button class="btn btn-sm" style="color:var(--danger);padding:3px 8px" onclick="removeRow(${rowCount})">✕</button></td>`;
+  tbody.appendChild(tr);
+  rowCount++;
+  calcTotal();
+}
+
+function setPrice(sel,i){
+  const opt = sel.options[sel.selectedIndex];
+  document.getElementById('precio-'+i).value = opt.dataset.precio || 0;
+  document.getElementById('stk-'+i).textContent = opt.dataset.stock !== undefined ? opt.dataset.stock+' uds' : '—';
+  calcRow(i);
+}
+function calcRow(i){
+  const p = parseFloat(document.getElementById('precio-'+i)?.value||0);
+  const c = parseFloat(document.getElementById('cant-'+i)?.value||0);
+  const cell = document.getElementById('sub-'+i);
+  if(cell) cell.textContent = fmt(p*c);
+  calcTotal();
+}
+function calcTotal(){
+  let t = 0;
+  document.querySelectorAll('[id^="sub-"]').forEach(el=>{ t += parseFloat(el.textContent.replace(/[$,]/g,''))||0; });
+  document.getElementById('total-cell').textContent = fmt(t);
+}
+function removeRow(i){
+  document.getElementById('row-'+i)?.remove();
+  calcTotal();
+}
+async function guardar(){
+  const cliente_id = document.getElementById('cliente_id').value;
+  const fecha_entrega = document.getElementById('fecha_entrega').value;
+  if(!cliente_id){ alert('Selecciona un cliente'); return; }
+  if(!fecha_entrega){ alert('Selecciona una fecha de entrega'); return; }
+  const items = [];
+  document.querySelectorAll('.prod-sel').forEach(sel=>{
+    const pid = sel.value;
+    if(!pid) return;
+    const rowId = sel.closest('tr').id.split('-')[1];
+    const precio = parseFloat(document.getElementById('precio-'+rowId).value);
+    const cant = parseInt(document.getElementById('cant-'+rowId).value);
+    items.push({producto_id:parseInt(pid), cantidad:cant, precio_unitario:precio, subtotal:precio*cant});
+  });
+  if(!items.length){ alert('Agrega al menos un producto'); return; }
+  const total = items.reduce((s,i)=>s+i.subtotal,0);
+  const body = {
+    cliente_id:parseInt(cliente_id),
+    cotizacion_id: document.getElementById('cotizacion_id').value || null,
+    fecha_entrega, total,
+    estado:document.getElementById('estado_ini').value,
+    notas:document.getElementById('notas').value,
+    items
+  };
+  const r = await fetch('/pedidos/nuevo',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(body)});
+  const data = await r.json();
+  if(data.ok){
+    const al = document.getElementById('alert');
+    al.style.display='block';
+    al.innerHTML = `✅ Pedido <strong>${data.folio}</strong> creado correctamente. <a href="/pedidos">Ver listado</a>`;
+    window.scrollTo(0,0);
+  }
+}
+</script>
+{% endblock %}

@@ -1,0 +1,86 @@
+{% extends "base.html" %}
+{% set active = 'pedidos' %}
+{% block title %}Pedidos{% endblock %}
+{% block content %}
+<div class="topbar">
+  <div class="topbar-left">
+    <h1>Pedidos</h1>
+    <p>Seguimiento de órdenes</p>
+  </div>
+  <div class="topbar-actions">
+    <a href="/pedidos/nuevo" class="btn btn-primary">
+      <svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+      Nuevo pedido
+    </a>
+  </div>
+</div>
+<div class="content">
+  <div class="stats-grid">
+    <div class="stat">
+      <div class="stat-label">Activos</div>
+      <div class="stat-value">{{ stats.activos }}</div>
+      <div class="stat-sub">en proceso</div>
+    </div>
+    <div class="stat">
+      <div class="stat-label">Entregados</div>
+      <div class="stat-value" style="color:var(--accent)">{{ stats.entregados }}</div>
+    </div>
+    <div class="stat">
+      <div class="stat-label">Facturado</div>
+      <div class="stat-value" style="font-size:16px">${{ "{:,.2f}".format(stats.total_mes) }}</div>
+    </div>
+  </div>
+
+  <div class="table-wrap">
+    <table>
+      <thead>
+        <tr>
+          <th>Folio</th>
+          <th>Cliente</th>
+          <th>Fecha</th>
+          <th>Entrega</th>
+          <th>Total</th>
+          <th>Estado</th>
+          <th>Acciones</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for p in pedidos %}
+        <tr>
+          <td class="mono">{{ p.folio }}</td>
+          <td>{{ p.empresa or '—' }}</td>
+          <td>{{ p.fecha[:10] if p.fecha else '—' }}</td>
+          <td>{{ p.fecha_entrega or '—' }}</td>
+          <td class="price">${{ "{:,.2f}".format(p.total) }}</td>
+          <td>
+            {% set badge = {'Pendiente':'badge-pending','En camino':'badge-transit','Entregado':'badge-delivered','Cancelado':'badge-cancelled'} %}
+            <span class="badge {{ badge.get(p.estado,'badge-draft') }}">{{ p.estado }}</span>
+          </td>
+          <td style="display:flex;gap:5px;flex-wrap:wrap">
+            <a href="/pedidos/{{ p.id }}" class="btn btn-sm">Ver</a>
+            {% if p.estado == 'Pendiente' %}
+            <button class="btn btn-sm" onclick="cambiarEstado({{ p.id }},'En camino')" style="color:var(--info)">En camino</button>
+            {% endif %}
+            {% if p.estado == 'En camino' %}
+            <button class="btn btn-sm" onclick="cambiarEstado({{ p.id }},'Entregado')" style="color:var(--accent)">Entregado</button>
+            {% endif %}
+            {% if p.estado not in ('Entregado','Cancelado') %}
+            <button class="btn btn-sm" onclick="cambiarEstado({{ p.id }},'Cancelado')" style="color:var(--danger)">Cancelar</button>
+            {% endif %}
+          </td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</div>
+{% endblock %}
+{% block scripts %}
+<script>
+async function cambiarEstado(id,estado){
+  if(!confirm(`¿Cambiar estado a "${estado}"?`)) return;
+  const r = await fetch(`/pedidos/estado/${id}`,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({estado})});
+  if((await r.json()).ok) location.reload();
+}
+</script>
+{% endblock %}

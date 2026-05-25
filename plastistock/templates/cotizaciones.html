@@ -1,0 +1,84 @@
+{% extends "base.html" %}
+{% set active = 'cotizaciones' %}
+{% block title %}Cotizaciones{% endblock %}
+{% block content %}
+<div class="topbar">
+  <div class="topbar-left">
+    <h1>Cotizaciones</h1>
+    <p>Historial y seguimiento</p>
+  </div>
+  <div class="topbar-actions">
+    <a href="/cotizaciones/nueva" class="btn btn-primary">
+      <svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+      Nueva cotización
+    </a>
+  </div>
+</div>
+<div class="content">
+  <div class="stats-grid">
+    <div class="stat">
+      <div class="stat-label">Total</div>
+      <div class="stat-value">{{ stats.total }}</div>
+    </div>
+    <div class="stat">
+      <div class="stat-label">Aprobadas</div>
+      <div class="stat-value" style="color:var(--accent)">{{ stats.aprobadas }}</div>
+    </div>
+    <div class="stat">
+      <div class="stat-label">Pendientes</div>
+      <div class="stat-value" style="color:var(--warn)">{{ stats.pendientes }}</div>
+    </div>
+    <div class="stat">
+      <div class="stat-label">Monto total</div>
+      <div class="stat-value" style="font-size:16px">${{ "{:,.2f}".format(stats.monto) }}</div>
+    </div>
+  </div>
+
+  <div class="table-wrap">
+    <table>
+      <thead>
+        <tr>
+          <th>Folio</th>
+          <th>Cliente</th>
+          <th>Fecha</th>
+          <th>Vigencia</th>
+          <th>Total</th>
+          <th>Estado</th>
+          <th>Acciones</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for c in cotizaciones %}
+        <tr>
+          <td class="mono">{{ c.folio }}</td>
+          <td>{{ c.empresa or '—' }}</td>
+          <td>{{ c.fecha[:10] if c.fecha else '—' }}</td>
+          <td>{{ c.vigencia or '—' }}</td>
+          <td class="price">${{ "{:,.2f}".format(c.total) }}</td>
+          <td>
+            {% set badge = {'Borrador':'badge-draft','Enviada':'badge-sent','Aprobada':'badge-approved','Pendiente':'badge-pending','Cancelada':'badge-cancelled'} %}
+            <span class="badge {{ badge.get(c.estado,'badge-draft') }}">{{ c.estado }}</span>
+          </td>
+          <td style="display:flex;gap:6px">
+            <a href="/cotizaciones/{{ c.id }}" class="btn btn-sm">Ver</a>
+            {% if c.estado not in ('Aprobada','Cancelada') %}
+            <button class="btn btn-sm" onclick="cambiarEstado({{ c.id }},'Aprobada')" style="color:var(--accent)">Aprobar</button>
+            <button class="btn btn-sm" onclick="cambiarEstado({{ c.id }},'Cancelada')" style="color:var(--danger)">Cancelar</button>
+            {% endif %}
+          </td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</div>
+{% endblock %}
+{% block scripts %}
+<script>
+async function cambiarEstado(id, estado){
+  if(!confirm(`¿Cambiar estado a "${estado}"?`)) return;
+  const r = await fetch(`/cotizaciones/estado/${id}`,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({estado})});
+  if((await r.json()).ok) location.reload();
+}
+</script>
+{% endblock %}

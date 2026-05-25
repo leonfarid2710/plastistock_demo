@@ -1,0 +1,111 @@
+{% extends "base.html" %}
+{% set active = 'pedidos' %}
+{% block title %}{{ ped.folio }}{% endblock %}
+{% block content %}
+<div class="topbar">
+  <div class="topbar-left">
+    <h1>{{ ped.folio }}</h1>
+    <p>{{ ped.empresa }} — Entrega: {{ ped.fecha_entrega or '—' }}</p>
+  </div>
+  <div class="topbar-actions">
+    <button class="btn btn-sm" onclick="window.print()">
+      <svg fill="none" stroke="currentColor" stroke-width="1.8" viewBox="0 0 24 24" width="14" height="14"><polyline points="6 9 6 2 18 2 18 9"/><path d="M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2"/><rect x="6" y="14" width="12" height="8"/></svg>
+      Imprimir
+    </button>
+    <a href="/pedidos" class="btn">← Volver</a>
+  </div>
+</div>
+
+<div class="content">
+  <div style="max-width:820px">
+
+    <!-- Header info -->
+    <div class="card" style="margin-bottom:14px">
+      <div class="card-body">
+        <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:20px">
+          <div>
+            <div style="font-size:11px;color:var(--text3);font-weight:600;text-transform:uppercase;letter-spacing:.05em;margin-bottom:5px">Cliente</div>
+            <div style="font-weight:600;font-size:14px">{{ ped.empresa }}</div>
+            <div style="font-size:12px;color:var(--text2)">{{ ped.contacto or '' }}</div>
+            {% if ped.telefono %}<div style="font-size:12px;color:var(--text3)">{{ ped.telefono }}</div>{% endif %}
+          </div>
+          <div>
+            <div style="font-size:11px;color:var(--text3);font-weight:600;text-transform:uppercase;letter-spacing:.05em;margin-bottom:5px">Fechas</div>
+            <div style="font-size:13px"><span style="color:var(--text2)">Pedido:</span> {{ ped.fecha[:10] if ped.fecha else '—' }}</div>
+            <div style="font-size:13px"><span style="color:var(--text2)">Entrega:</span> <strong>{{ ped.fecha_entrega or '—' }}</strong></div>
+          </div>
+          <div style="text-align:right">
+            <div style="font-size:11px;color:var(--text3);font-weight:600;text-transform:uppercase;letter-spacing:.05em;margin-bottom:5px">Estado</div>
+            {% set badge = {'Pendiente':'badge-pending','En camino':'badge-transit','Entregado':'badge-delivered','Cancelado':'badge-cancelled'} %}
+            <span class="badge {{ badge.get(ped.estado,'badge-draft') }}" style="font-size:13px;padding:5px 14px">{{ ped.estado }}</span>
+            <div style="margin-top:10px;display:flex;gap:6px;justify-content:flex-end;flex-wrap:wrap">
+              {% if ped.estado == 'Pendiente' %}
+              <button class="btn btn-sm" onclick="cambiar('En camino')" style="color:var(--info)">→ En camino</button>
+              {% endif %}
+              {% if ped.estado == 'En camino' %}
+              <button class="btn btn-sm" onclick="cambiar('Entregado')" style="color:var(--accent)">✓ Entregado</button>
+              {% endif %}
+              {% if ped.estado not in ('Entregado','Cancelado') %}
+              <button class="btn btn-sm" onclick="cambiar('Cancelado')" style="color:var(--danger)">✕ Cancelar</button>
+              {% endif %}
+            </div>
+          </div>
+        </div>
+        {% if ped.notas %}
+        <div style="margin-top:14px;padding-top:12px;border-top:1px solid var(--border)">
+          <span style="font-size:11px;font-weight:600;color:var(--text3);text-transform:uppercase;letter-spacing:.05em">Notas: </span>
+          <span style="font-size:13px;color:var(--text2)">{{ ped.notas }}</span>
+        </div>
+        {% endif %}
+      </div>
+    </div>
+
+    <!-- Productos -->
+    <div class="table-wrap" style="margin-bottom:14px">
+      <table>
+        <thead>
+          <tr>
+            <th>Ref.</th>
+            <th>Producto</th>
+            <th>Medida</th>
+            <th style="text-align:right">Precio unit.</th>
+            <th style="text-align:right">Cantidad</th>
+            <th style="text-align:right">Subtotal</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for i in items %}
+          <tr>
+            <td class="mono">{{ i.ref }}</td>
+            <td>{{ i.nombre }}</td>
+            <td class="mono">{{ i.medida or '—' }}</td>
+            <td class="price" style="text-align:right">${{ "%.2f"|format(i.precio_unitario) }}</td>
+            <td style="text-align:right;font-weight:500">{{ i.cantidad }}</td>
+            <td class="price" style="text-align:right;font-weight:600">${{ "%.2f"|format(i.subtotal) }}</td>
+          </tr>
+          {% endfor %}
+        </tbody>
+        <tfoot>
+          <tr style="background:var(--surface2)">
+            <td colspan="5" style="text-align:right;font-weight:600;padding:12px 14px;font-size:14px">Total del pedido:</td>
+            <td style="text-align:right;font-weight:700;font-family:'DM Mono',monospace;padding:12px 14px;font-size:15px;color:var(--accent)">${{ "%.2f"|format(ped.total) }}</td>
+          </tr>
+        </tfoot>
+      </table>
+    </div>
+
+  </div>
+</div>
+{% endblock %}
+{% block scripts %}
+<script>
+async function cambiar(estado){
+  if(!confirm(`¿Cambiar estado a "${estado}"?`)) return;
+  const r = await fetch(`/pedidos/estado/{{ ped.id }}`,{
+    method:'POST', headers:{'Content-Type':'application/json'},
+    body: JSON.stringify({estado})
+  });
+  if((await r.json()).ok) location.reload();
+}
+</script>
+{% endblock %}

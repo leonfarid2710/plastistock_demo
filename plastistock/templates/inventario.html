@@ -1,0 +1,98 @@
+{% extends "base.html" %}
+{% set active = 'inventario' %}
+{% block title %}Inventario{% endblock %}
+{% block content %}
+<div class="topbar">
+  <div class="topbar-left">
+    <h1>Inventario de productos</h1>
+    <p>Leissam Plásticos y Derivados</p>
+  </div>
+  <div class="topbar-actions">
+    <a href="/inventario/nuevo" class="btn btn-primary btn-sm">
+      <svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24" width="14" height="14"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+      Nuevo producto
+    </a>
+    <button class="btn btn-sm" onclick="window.print()">
+      <svg fill="none" stroke="currentColor" stroke-width="1.8" viewBox="0 0 24 24"><polyline points="6 9 6 2 18 2 18 9"/><path d="M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2"/><rect x="6" y="14" width="12" height="8"/></svg>
+      Imprimir
+    </button>
+  </div>
+</div>
+<div class="content">
+  <div class="stats-grid">
+    <div class="stat">
+      <div class="stat-label">Total SKUs</div>
+      <div class="stat-value">{{ stats.total_skus }}</div>
+      <div class="stat-sub">productos registrados</div>
+    </div>
+    <div class="stat">
+      <div class="stat-label">Piezas en stock</div>
+      <div class="stat-value">{{ "{:,}".format(stats.total_stock) }}</div>
+      <div class="stat-sub">unidades disponibles</div>
+    </div>
+    <div class="stat">
+      <div class="stat-label">Stock bajo</div>
+      <div class="stat-value" style="color:var(--warn)">{{ stats.stock_bajo }}</div>
+      <div class="stat-sub">requieren reorden</div>
+    </div>
+    <div class="stat">
+      <div class="stat-label">Agotados</div>
+      <div class="stat-value" style="color:var(--danger)">{{ stats.agotados }}</div>
+      <div class="stat-sub">sin existencia</div>
+    </div>
+  </div>
+
+  <form class="search-bar" method="get">
+    <input type="text" name="q" value="{{ q }}" placeholder="Buscar por nombre o referencia…">
+    <button class="btn btn-primary" type="submit">Buscar</button>
+    {% if q %}<a href="/inventario" class="btn">Limpiar</a>{% endif %}
+  </form>
+
+  <div class="table-wrap">
+    <table>
+      <thead>
+        <tr>
+          <th>Ref.</th>
+          <th>Nombre</th>
+          <th>Medida</th>
+          <th>Cont. paquete</th>
+          <th>Cont. bulto</th>
+          <th>Costo</th>
+          <th>P. unitario + IVA</th>
+          <th>P. margen</th>
+          <th>Stock</th>
+          <th>Estado</th>
+          <th></th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for p in productos %}
+        <tr>
+          <td class="mono">{{ p.ref }}</td>
+          <td style="max-width:260px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">{{ p.nombre }}</td>
+          <td class="mono">{{ p.medida or '—' }}</td>
+          <td>{{ p.contenido_paquete or '—' }}</td>
+          <td>{{ p.contenido_bulto }}</td>
+          <td class="price">${{ "%.2f"|format(p.costo) }}</td>
+          <td class="price">${{ "%.2f"|format(p.precio_unitario_iva) }}</td>
+          <td class="price">${{ "%.2f"|format(p.precio_margen) }}</td>
+          <td style="font-weight:500">{{ p.stock }}</td>
+          <td>
+            {% if p.stock == 0 %}
+              <span class="badge badge-out">Agotado</span>
+            {% elif p.stock < 50 %}
+              <span class="badge badge-low">Bajo</span>
+            {% else %}
+              <span class="badge badge-ok">OK</span>
+            {% endif %}
+          </td>
+          <td>
+            <a href="/inventario/editar/{{ p.id }}" class="btn btn-sm">Editar</a>
+          </td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</div>
+{% endblock %}
