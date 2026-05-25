@@ -414,7 +414,7 @@ def nueva_cotizacion():
         db.commit()
         return jsonify({'ok': True, 'folio': folio})
     clientes_list  = db.execute("SELECT id,empresa FROM clientes WHERE activo=1 ORDER BY empresa").fetchall()
-    productos_list = db.execute("SELECT * FROM productos ORDER BY ref").fetchall()
+    productos_list = [dict(r) for r in db.execute("SELECT * FROM productos ORDER BY ref").fetchall()]
     return render_template('form_cotizacion.html', clientes=clientes_list, productos=productos_list)
 
 @app.route('/cotizaciones/<int:cid>')
@@ -481,7 +481,7 @@ def nuevo_pedido():
         db.commit()
         return jsonify({'ok': True, 'folio': folio})
     clientes_list    = db.execute("SELECT id,empresa FROM clientes WHERE activo=1 ORDER BY empresa").fetchall()
-    productos_list   = db.execute("SELECT * FROM productos ORDER BY ref").fetchall()
+    productos_list   = [dict(r) for r in db.execute("SELECT * FROM productos ORDER BY ref").fetchall()]
     cotizaciones_list= db.execute("""SELECT c.id,c.folio,cl.empresa FROM cotizaciones c
         JOIN clientes cl ON c.cliente_id=cl.id
         WHERE c.estado='Aprobada' ORDER BY c.id DESC""").fetchall()
